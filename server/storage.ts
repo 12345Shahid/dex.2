@@ -11,8 +11,8 @@ export class SupabaseStorage implements IStorage {
   constructor() {
     // You'll need to use a session store compatible with Supabase
     // For now, we'll keep the memory store for easy transition
-    import memorystore from 'memorystore';
-    const MemoryStore = memorystore(session);
+    // Using dynamic import for memorystore in ESM
+    const MemoryStore = (await import('memorystore')).default(session);
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
