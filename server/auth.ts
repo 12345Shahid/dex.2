@@ -4,7 +4,6 @@ import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { supabase } from "./supabase";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 
