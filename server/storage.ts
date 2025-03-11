@@ -1,174 +1,209 @@
+
 import { IStorage } from "./types";
 import { User, ChatHistory, File, Folder, Notification, Contact, InsertUser } from "@shared/schema";
 import { nanoid } from "nanoid";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import { supabase } from "./supabase";
 
-const MemoryStore = createMemoryStore(session);
-
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private chatHistory: Map<number, ChatHistory>;
-  private files: Map<number, File>;
-  private folders: Map<number, Folder>;
-  private notifications: Map<number, Notification>;
-  private contacts: Map<number, Contact>;
-  private currentId: number;
+export class SupabaseStorage implements IStorage {
   sessionStore: session.SessionStore;
 
   constructor() {
-    this.users = new Map();
-    this.chatHistory = new Map();
-    this.files = new Map();
-    this.folders = new Map();
-    this.notifications = new Map();
-    this.contacts = new Map();
-    this.currentId = 1;
+    // You'll need to use a session store compatible with Supabase
+    // For now, we'll keep the memory store for easy transition
+    const MemoryStore = require('memorystore')(session);
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
+    
+    // In production, you might want to use something like:
+    // const PgStore = require('connect-pg-simple')(session);
+    // this.sessionStore = new PgStore({
+    //   conString: process.env.DATABASE_URL
+    // });
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error || !data) return undefined;
+    return data as User;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .single();
+    
+    if (error || !data) return undefined;
+    return data as User;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = {
-      id,
-      ...insertUser,
-      credits: 20,
-      referralCode: nanoid(10),
-      referredBy: null,
-    };
-    this.users.set(id, user);
-    return user;
+    const referralCode = nanoid(10);
+    
+    const { data, error } = await supabase
+      .from('users')
+      .insert({
+        ...insertUser,
+        credits: 20,
+        referral_code: referralCode,
+        referred_by: null,
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as User;
   }
 
   async addUserCredits(userId: number, amount: number): Promise<void> {
     const user = await this.getUser(userId);
-    if (user) {
-      this.users.set(userId, { ...user, credits: user.credits + amount });
-    }
+    if (!user) return;
+    
+    await supabase
+      .from('users')
+      .update({ credits: user.credits + amount })
+      .eq('id', userId);
   }
 
   async getUserChatHistory(userId: number): Promise<ChatHistory[]> {
-    return Array.from(this.chatHistory.values()).filter(
-      (chat) => chat.userId === userId,
-    );
+    const { data, error } = await supabase
+      .from('chat_history')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error || !data) return [];
+    return data as ChatHistory[];
   }
 
   async saveChatHistory(userId: number, prompt: string, response: string): Promise<ChatHistory> {
-    const id = this.currentId++;
-    const chat: ChatHistory = {
-      id,
-      userId,
-      prompt,
-      response,
-      isFavorite: false,
-      createdAt: new Date(),
-    };
-    this.chatHistory.set(id, chat);
-    return chat;
+    const { data, error } = await supabase
+      .from('chat_history')
+      .insert({
+        user_id: userId,
+        prompt,
+        response,
+        is_favorite: false,
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as ChatHistory;
   }
 
   async toggleFavorite(chatId: number): Promise<void> {
-    const chat = this.chatHistory.get(chatId);
-    if (chat) {
-      this.chatHistory.set(chatId, { ...chat, isFavorite: !chat.isFavorite });
-    }
+    const { data } = await supabase
+      .from('chat_history')
+      .select('is_favorite')
+      .eq('id', chatId)
+      .single();
+    
+    if (!data) return;
+    
+    await supabase
+      .from('chat_history')
+      .update({ is_favorite: !data.is_favorite })
+      .eq('id', chatId);
   }
 
   async getUserFiles(userId: number): Promise<File[]> {
-    return Array.from(this.files.values()).filter(
-      (file) => file.userId === userId,
-    );
+    const { data, error } = await supabase
+      .from('files')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error || !data) return [];
+    return data as File[];
   }
 
   async createFile(userId: number, name: string, content?: string, folderId?: number): Promise<File> {
-    const id = this.currentId++;
-    const file: File = {
-      id,
-      userId,
-      name,
-      content: content || '',
-      folderId: folderId || null,
-      createdAt: new Date(),
-    };
-    this.files.set(id, file);
-    return file;
+    const { data, error } = await supabase
+      .from('files')
+      .insert({
+        user_id: userId,
+        name,
+        content: content || '',
+        folder_id: folderId || null,
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as File;
   }
 
   async createFolder(userId: number, name: string): Promise<Folder> {
-    const id = this.currentId++;
-    const folder: Folder = {
-      id,
-      userId,
-      name,
-      createdAt: new Date(),
-    };
-    this.folders.set(id, folder);
-    return folder;
+    const { data, error } = await supabase
+      .from('folders')
+      .insert({
+        user_id: userId,
+        name,
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as Folder;
   }
 
   async searchFiles(userId: number, query: string): Promise<(File | Folder)[]> {
     console.log(`Searching for "${query}" for user ${userId}`);
     const lowercaseQuery = query.toLowerCase();
 
-    // Get all files and folders for the user
-    const userFiles = Array.from(this.files.values())
-      .filter(file => file.userId === userId);
-
-    const userFolders = Array.from(this.folders.values())
-      .filter(folder => folder.userId === userId);
-
-    console.log(`Found ${userFiles.length} files and ${userFolders.length} folders for user`);
-
     // If no query, return all items
     if (!query) {
-      const allItems = [...userFiles, ...userFolders];
-      console.log(`Returning all ${allItems.length} items`);
-      return allItems;
+      const [filesResult, foldersResult] = await Promise.all([
+        supabase.from('files').select('*').eq('user_id', userId),
+        supabase.from('folders').select('*').eq('user_id', userId)
+      ]);
+      
+      const files = filesResult.data || [];
+      const folders = foldersResult.data || [];
+      
+      return [...files, ...folders];
     }
 
-    // Search in both files and folders
-    const matchingFiles = userFiles.filter(file =>
-      file.name.toLowerCase().includes(lowercaseQuery) ||
-      (file.content?.toLowerCase() || '').includes(lowercaseQuery)
-    );
-
-    const matchingFolders = userFolders.filter(folder =>
-      folder.name.toLowerCase().includes(lowercaseQuery)
-    );
-
-    const results = [...matchingFiles, ...matchingFolders];
-    console.log(`Found ${results.length} matching items`);
-    return results;
+    // Search with ILIKE for partial matches
+    const [filesResult, foldersResult] = await Promise.all([
+      supabase.from('files')
+        .select('*')
+        .eq('user_id', userId)
+        .or(`name.ilike.%${lowercaseQuery}%,content.ilike.%${lowercaseQuery}%`),
+      supabase.from('folders')
+        .select('*')
+        .eq('user_id', userId)
+        .ilike('name', `%${lowercaseQuery}%`)
+    ]);
+    
+    const files = filesResult.data || [];
+    const folders = foldersResult.data || [];
+    
+    return [...files, ...folders];
   }
 
   async createNotification(userId: number, message: string): Promise<void> {
-    const id = this.currentId++;
-    const notification: Notification = {
-      id,
-      userId,
+    await supabase.from('notifications').insert({
+      user_id: userId,
       message,
       read: false,
-      createdAt: new Date(),
-    };
-    this.notifications.set(id, notification);
+    });
   }
 
   async createContact(contact: Contact): Promise<void> {
-    const id = this.currentId++;
-    this.contacts.set(id, { ...contact, id, createdAt: new Date() });
+    await supabase.from('contacts').insert({
+      ...contact
+    });
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new SupabaseStorage();
