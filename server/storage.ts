@@ -9,13 +9,19 @@ export class SupabaseStorage implements IStorage {
   sessionStore: session.SessionStore;
 
   constructor() {
+    // Initialize with a placeholder - we'll set the real store in the async init method
+    this.sessionStore = {} as session.SessionStore;
+  }
+
+  async init() {
     // You'll need to use a session store compatible with Supabase
     // For now, we'll keep the memory store for easy transition
-    // Using dynamic import for memorystore in ESM
     const MemoryStore = (await import('memorystore')).default(session);
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
+    return this;
+  }
     
     // In production, you might want to use something like:
     // const PgStore = require('connect-pg-simple')(session);
@@ -207,4 +213,8 @@ export class SupabaseStorage implements IStorage {
   }
 }
 
-export const storage = new SupabaseStorage();
+// Create but don't export directly - we need to initialize it first
+const storageInstance = new SupabaseStorage();
+
+// Export a promise that resolves to the initialized storage
+export const storage = await storageInstance.init();
