@@ -24,7 +24,7 @@ export const files = pgTable("files", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   name: text("name").notNull(),
-  content: text("content").notNull(),
+  content: text("content"),
   folderId: integer("folder_id").references(() => folders.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -66,6 +66,8 @@ export const insertFileSchema = createInsertSchema(files).pick({
   name: true,
   content: true,
   folderId: true,
+}).extend({
+  content: z.string().optional(),
 });
 
 export const insertFolderSchema = createInsertSchema(folders).pick({

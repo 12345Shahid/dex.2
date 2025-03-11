@@ -1,0 +1,32 @@
+Okay, there are some issues. Let's fix them one by one. Firstly in the dashboard there is a section called ad credits and it should be showed as coming soon not zero because I don't have any ad integration in my website till now so I can't give my user's  this functionality and it should be showing coming soon.  Okay, now moving on to the chat option   I am giving you some information and make sure you implemented them  .   
+
+The chatbot interface can be simple and use a friendly . You can make the design  
+
+Include input fields like a negative box for users to specify what they don’t want in the generated content, a word range (e.g., 1500 to 2500), and a tone (e.g., excited, professional). Add any other input fields you think are beneficial. Aim for maximum user satisfaction by providing all possible input fields so users can customise the content. Also, include output fields as desired, but keep in mind that the tool will generate text, so there should be enough manual editing options in the interface after generation about manual editing people is going to click on the content and they will be taken to a separate page which will be like Google Docs for editing the content. In case there will be a tool selection page and people can access that using the menu and in that page people can find the five categories of tools . People can choose any of the tool and then he will be redirected to that  tool interface and then he will start chatting and generating. There will be  five types of tools and they are blogging tool ,YouTube tool, research tool, developer tool, general tool . As you can understand all the tools interfaces will have some similarities like the colour palette as they belong to the same website but yes, they will have different also because they are different. The chats or the conversations should be shareable and people should be able to mark some of them as favourite as they wish. You should handle this in both places frontend  and back end.The  ai should be able to create files, pies, charts and tables as needed
+
+
+
+
+That was the first thing about the chat option now the second thing is I gave an input in the existing chat interface and the output was an error message and the message is             Error
+500: {"message":"Failed to generate response"}
+
+
+Now the third thing is that fix all of these things and make sure that the mistral AI is judging the input given by the user and also this is the same AI giving the response back according to the question, but I should say according to the prompt. I am giving again a description about the judgement process and I guess you know how the response process will happen after the approval of the question.                         
+
+
+For example, if someone enters a question and hits the create or  generate button then the AI will check the prompt that if it is halal or not if the user asked to generate something Haram then it will show the user a beautiful notification that your given prompt is Haram so I can't generate it and it will highlight the point that why it is Haram with a good explanation and the text highlighting where the problem caused . And when it will generate the content  It will also make sure that it is generating content which is halal by the rules of Islam. As you can understand because I told you before that we are going to use a mistral AI from hugging face and yes, I am giving you again the hugging face access token or API token whatever you say it                  HUGGING_FACE_API_KEY=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
+
+
+
+
+Okay, now moving on to the files option from the navigation bar. Okay, in the front and everything is okay. But whenever I click on create file or create folder after giving the necessary information, nothing happens it looks like you haven't set up the backend yet but yes the front end looks okay. Another thing is that make sure that people can create file using the generated content from the chat interface directly and they can create empty files from the file page also. For example they can create empty folders so they should be able to also create empty files by just giving the name and the content option should be optional. 
+
+
+Now let's move on to the log out functionality and yes, it's working. Nothing to comment. In case fix these issues and maybe in some cases I guess you did not implemented some back end functionality intentionally because maybe it is the part of your plan now I'm not sure about it but I just want to complete it. Okay, let's make the modifications and make it completed. 
+ 
+
+
+
+
+
+

@@ -92,13 +92,13 @@ export class MemStorage implements IStorage {
     );
   }
 
-  async createFile(userId: number, name: string, content: string, folderId?: number): Promise<File> {
+  async createFile(userId: number, name: string, content?: string, folderId?: number): Promise<File> {
     const id = this.currentId++;
     const file: File = {
       id,
       userId,
       name,
-      content,
+      content: content || '',
       folderId: folderId || null,
       createdAt: new Date(),
     };

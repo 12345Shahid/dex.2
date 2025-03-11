@@ -22,7 +22,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container py-6">
         <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
 
@@ -53,11 +53,14 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium">
-                Ad Credits Earned
+                Ad Credits
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="flex flex-col gap-1">
+                <div className="text-2xl font-bold">Coming Soon</div>
+                <p className="text-sm text-muted-foreground">Earn credits by watching ads</p>
+              </div>
             </CardContent>
           </Card>
         </div>
