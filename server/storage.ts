@@ -16,7 +16,8 @@ export class SupabaseStorage implements IStorage {
   async init() {
     // You'll need to use a session store compatible with Supabase
     // For now, we'll keep the memory store for easy transition
-    const MemoryStore = (await import('memorystore')).default(session);
+    const memorystore = await import('memorystore');
+    const MemoryStore = memorystore.default(session);
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
@@ -28,7 +29,6 @@ export class SupabaseStorage implements IStorage {
     // this.sessionStore = new PgStore({
     //   conString: process.env.DATABASE_URL
     // });
-  }
 
   async getUser(id: number): Promise<User | undefined> {
     const { data, error } = await supabase
