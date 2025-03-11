@@ -8,16 +8,11 @@ import { insertUserSchema } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useEffect } from "react";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
-
-  // Redirect if already logged in
-  if (user) {
-    setLocation("/dashboard");
-    return null;
-  }
 
   const loginForm = useForm({
     resolver: zodResolver(insertUserSchema),
@@ -34,6 +29,18 @@ export default function AuthPage() {
       password: "",
     },
   });
+
+  // Handle redirect in useEffect
+  useEffect(() => {
+    if (user) {
+      setLocation("/dashboard");
+    }
+  }, [user, setLocation]);
+
+  // If we're in the process of redirecting, show nothing
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
