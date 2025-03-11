@@ -1,0 +1,97 @@
+1:47:55 PM [express] GET /api/chat/history 200 in 670ms
+Received chat request: {
+  prompt: 'cc',
+  negativePrompt: '',
+  minWords: '500',
+  maxWords: '1000',
+  tone: 'professional',
+  tool: 'general'
+}
+Validating prompt: cc
+Prompt validation passed
+Generating AI response...
+Starting AI generation with params: {
+  prompt: 'cc',
+  negativePrompt: '',
+  minWords: '500',
+  maxWords: '1000',
+  tone: 'professional',
+  tool: 'general'
+}
+Constructed system prompt: Generate a Halal and Islamic-appropriate response for the following request. 
+Use a professional tone.
+Target length: between 500 and 1000 words.
+
+Tool context: general content generation.
+
+User request: cc
+Using API key: Present
+Initializing Hugging Face inference...
+Using model: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+AI generation error details: Error: "You have exceeded your monthly included credits for Inference Providers. Subscribe to PRO to get 20x more monthly allowance."
+    at request (file:///home/runner/workspace/node_modules/@huggingface/inference/dist/index.js:591:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async textGeneration (file:///home/runner/workspace/node_modules/@huggingface/inference/dist/index.js:1361:7)
+    at async generateResponse (/home/runner/workspace/server/ai.ts:92:22)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:36:24)
+Error name: Error
+Error message: "You have exceeded your monthly included credits for Inference Providers. Subscribe to PRO to get 20x more monthly allowance."
+Error stack: Error: "You have exceeded your monthly included credits for Inference Providers. Subscribe to PRO to get 20x more monthly allowance."
+    at request (file:///home/runner/workspace/node_modules/@huggingface/inference/dist/index.js:591:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async textGeneration (file:///home/runner/workspace/node_modules/@huggingface/inference/dist/index.js:1361:7)
+    at async generateResponse (/home/runner/workspace/server/ai.ts:92:22)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:36:24)
+Rate limit exceeded, using fallback response
+Saving chat history...
+Failed to save chat history: {}
+Chat generation error: {}
+1:48:12 PM [express] POST /api/chat 500 in 1066ms :: {"message":"Failed to generate response"}
+Received chat request: {
+  prompt: 'cc',
+  negativePrompt: '',
+  minWords: '500',
+  maxWords: '1000',
+  tone: 'professional',
+  tool: 'general'
+}
+Validating prompt: cc
+Prompt validation passed
+Generating AI response...
+Starting AI generation with params: {
+  prompt: 'cc',
+  negativePrompt: '',
+  minWords: '500',
+  maxWords: '1000',
+  tone: 'professional',
+  tool: 'general'
+}
+Constructed system prompt: Generate a Halal and Islamic-appropriate response for the following request. 
+Use a professional tone.
+Target length: between 500 and 1000 words.
+
+Tool context: general content generation.
+
+User request: cc
+Using API key: Present
+Initializing Hugging Face inference...
+Using model: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+AI generation error details: Error: "You have exceeded your monthly included credits for Inference Providers. Subscribe to PRO to get 20x more monthly allowance."
+    at request (file:///home/runner/workspace/node_modules/@huggingface/inference/dist/index.js:591:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async textGeneration (file:///home/runner/workspace/node_modules/@huggingface/inference/dist/index.js:1361:7)
+    at async generateResponse (/home/runner/workspace/server/ai.ts:92:22)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:36:24)
+Error name: Error
+Error message: "You have exceeded your monthly included credits for Inference Providers. Subscribe to PRO to get 20x more monthly allowance."
+Error stack: Error: "You have exceeded your monthly included credits for Inference Providers. Subscribe to PRO to get 20x more monthly allowance."
+    at request (file:///home/runner/workspace/node_modules/@huggingface/inference/dist/index.js:591:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async textGeneration (file:///home/runner/workspace/node_modules/@huggingface/inference/dist/index.js:1361:7)
+    at async generateResponse (/home/runner/workspace/server/ai.ts:92:22)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:36:24)
+Rate limit exceeded, using fallback response
+Saving chat history...
+Failed to save chat history: {}
+Chat generation error: {}
+1:48:25 PM [express] POST /api/chat 500 in 1119ms :: {"message":"Failed to generate response"}
