@@ -55,8 +55,15 @@ type GenerationParams = {
   tool?: string;
 };
 
-function getFallbackResponse(params: GenerationParams): string {
-  return `I apologize, but I am currently experiencing high demand and cannot generate a complete response at this moment. Here is a brief response to your request:
+import { generateLocalResponse } from './local-model';
+
+async function getFallbackResponse(params: GenerationParams): Promise<string> {
+  try {
+    console.log('Attempting to use local model for generation...');
+    return await generateLocalResponse(params.prompt, params);
+  } catch (localError) {
+    console.error('Local model fallback failed:', localError);
+    return `I apologize, but I am currently experiencing high demand and cannot generate a complete response at this moment. Here is a brief response to your request:
 
 Your prompt: "${params.prompt}"
 Tone requested: ${params.tone || 'professional'}
@@ -65,6 +72,7 @@ Context: ${params.tool || 'general'} content
 Please try again in a few minutes. We are working to improve our service capacity.
 
 Note: This is a temporary response due to reaching our API rate limits. Your credits have not been deducted for this response.`;
+  }
 }
 
 export async function generateResponse(params: GenerationParams): Promise<string> {
@@ -114,7 +122,7 @@ User request: ${prompt}`;
       // Check if it's a rate limit error
       if (error.message.includes('exceeded your monthly included credits')) {
         console.log('Rate limit exceeded, using fallback response');
-        return getFallbackResponse(params);
+        return await getFallbackResponse(params);
       }
     }
     throw new Error('Failed to generate AI response');
