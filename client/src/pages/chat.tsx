@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2, AlertCircle, Save } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -62,6 +62,7 @@ export default function ChatPage() {
   const [error, setError] = useState<string | null>(null);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [fileName, setFileName] = useState("");
+  const queryClient = useQueryClient();
 
   const chatMutation = useMutation({
     mutationFn: async (data: {
@@ -107,7 +108,22 @@ export default function ChatPage() {
     if (!response) return;
 
     try {
+      // Check if file with this name already exists
+      const res = await fetch(`/api/files/search?q=${prompt.slice(0, 30).trim()}`);
+      if (!res.ok) throw new Error("Failed to check existing files");
+      const files = await res.json();
+
       const defaultName = prompt.slice(0, 30).trim() + ".txt";
+      const isDuplicate = files.some((file: any) => file.name === defaultName);
+
+      if (isDuplicate) {
+        toast({
+          title: "Warning",
+          description: "A file with this name already exists. Please choose a different name.",
+          variant: "destructive",
+        });
+      }
+
       setFileName(defaultName);
       setSaveDialogOpen(true);
     } catch (error) {
@@ -121,11 +137,27 @@ export default function ChatPage() {
 
   const handleConfirmSave = async () => {
     try {
+      // Check for duplicate name before saving
+      const res = await fetch(`/api/files/search?q=${fileName}`);
+      if (!res.ok) throw new Error("Failed to check existing files");
+      const files = await res.json();
+
+      const isDuplicate = files.some((file: any) => file.name === fileName);
+      if (isDuplicate) {
+        toast({
+          title: "Error",
+          description: "A file with this name already exists. Please choose a different name.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       await apiRequest("POST", "/api/files", {
         name: fileName,
         content: response,
       });
 
+      queryClient.invalidateQueries({ queryKey: ["/api/files/search"] });
       toast({
         title: "Saved!",
         description: "Content saved to your files",

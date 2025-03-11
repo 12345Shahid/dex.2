@@ -17,9 +17,16 @@ import { insertFileSchema, insertFolderSchema } from "@shared/schema";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Folder, File as FileIcon, Search, Plus } from "lucide-react";
+import { Folder, File as FileIcon, Search, Plus, Download, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function FilesPage() {
   const { user } = useAuth();
@@ -29,7 +36,7 @@ export default function FilesPage() {
   const [fileDialogOpen, setFileDialogOpen] = useState(false);
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
-
+  const [downloadFormat, setDownloadFormat] = useState("txt");
 
   // Query for both files and folders
   const { data: files = [] } = useQuery({
@@ -60,8 +67,8 @@ export default function FilesPage() {
   const validateFileName = async (name: string, type: 'file' | 'folder') => {
     const existingItems = files || [];
     const isDuplicate = existingItems.some(
-      (item) => item.name === name &&
-        ((type === 'file' && !item.folderId) || (type === 'folder' && 'createdAt' in item))
+      (item: any) => item.name === name &&
+        ((type === 'file' && !('folderId' in item)) || (type === 'folder' && !('content' in item)))
     );
 
     if (isDuplicate) {
@@ -127,6 +134,36 @@ export default function FilesPage() {
     },
   });
 
+  const handleDownload = (file: any) => {
+    let fileType = 'text/plain';
+    let extension = downloadFormat;
+    let content = file.content;
+
+    if (downloadFormat === 'pdf') {
+      // For PDF, we'll need to create a formatted document
+      content = `
+        <html>
+          <body>
+            <pre style="font-family: Arial, sans-serif; white-space: pre-wrap;">
+              ${file.content}
+            </pre>
+          </body>
+        </html>
+      `;
+      fileType = 'text/html';
+    }
+
+    const blob = new Blob([content], { type: fileType });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${file.name.split('.')[0]}.${extension}`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -177,7 +214,7 @@ export default function FilesPage() {
             <Dialog open={fileDialogOpen} onOpenChange={setFileDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
-                  <Plus className="mr-2 h-4 w-4" />
+                  <FileText className="mr-2 h-4 w-4" />
                   New File
                 </Button>
               </DialogTrigger>
@@ -241,30 +278,33 @@ export default function FilesPage() {
         </Card>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {files.map((file: any) => (
+          {files.map((item: any) => (
             <Card
-              key={file.id}
-              className="cursor-pointer hover:bg-accent/50 transition-colors"
-              onClick={() => setSelectedFile(file)}
+              key={item.id}
+              className={`cursor-pointer hover:bg-accent/50 transition-colors ${
+                'content' in item ? 'border-primary/20' : 'border-secondary/20'
+              }`}
+              onClick={() => 'content' in item && setSelectedFile(item)}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {file.name}
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  {'content' in item ? (
+                    <FileIcon className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Folder className="h-4 w-4 text-secondary" />
+                  )}
+                  {item.name}
                 </CardTitle>
-                {file.folderId ? (
-                  <Folder className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <FileIcon className="h-4 w-4 text-muted-foreground" />
-                )}
               </CardHeader>
               <CardContent>
                 <p className="text-xs text-muted-foreground">
-                  Created {new Date(file.createdAt).toLocaleDateString()}
+                  Created {new Date(item.createdAt).toLocaleDateString()}
                 </p>
               </CardContent>
             </Card>
           ))}
         </div>
+
         <Dialog open={!!selectedFile} onOpenChange={() => setSelectedFile(null)}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
@@ -276,31 +316,34 @@ export default function FilesPage() {
                   {selectedFile?.content}
                 </pre>
               </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  onClick={() => {
-                    localStorage.setItem("editContent", selectedFile.content);
-                    setLocation("/editor");
-                  }}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    const blob = new Blob([selectedFile.content], { type: 'text/plain' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = selectedFile.name;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                  }}
-                >
-                  Download
-                </Button>
+              <div className="flex items-center gap-4">
+                <Select value={downloadFormat} onValueChange={setDownloadFormat}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Format" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="txt">Text (.txt)</SelectItem>
+                    <SelectItem value="pdf">PDF (.pdf)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex justify-end gap-2 flex-1">
+                  <Button
+                    onClick={() => {
+                      localStorage.setItem("editContent", selectedFile.content);
+                      setSelectedFile(null);
+                      setLocation("/editor");
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleDownload(selectedFile)}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download
+                  </Button>
+                </div>
               </div>
             </div>
           </DialogContent>

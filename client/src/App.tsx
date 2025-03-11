@@ -10,6 +10,7 @@ import AuthPage from "@/pages/auth-page";
 import DashboardPage from "@/pages/dashboard";
 import ChatPage from "@/pages/chat";
 import FilesPage from "@/pages/files";
+import EditorPage from "@/pages/editor";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
       <ProtectedRoute path="/chat" component={ChatPage} />
       <ProtectedRoute path="/files" component={FilesPage} />
+      <ProtectedRoute path="/editor" component={EditorPage} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Copy } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -18,6 +19,15 @@ export default function DashboardPage() {
       description: "Referral link copied to clipboard",
     });
   };
+
+  const { data: recentActivity = [] } = useQuery({
+    queryKey: ["/api/chat/history"],
+    queryFn: async () => {
+      const res = await fetch("/api/chat/history");
+      if (!res.ok) throw new Error("Failed to fetch chat history");
+      return res.json();
+    },
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -93,9 +103,22 @@ export default function DashboardPage() {
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-muted-foreground">
-              Your recent content generation activity will appear here
-            </div>
+            {recentActivity.length > 0 ? (
+              <div className="space-y-4">
+                {recentActivity.map((activity: any) => (
+                  <div key={activity.id} className="flex flex-col gap-1">
+                    <div className="text-sm font-medium">{activity.prompt}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(activity.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                No recent activity
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
