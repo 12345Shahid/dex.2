@@ -1,215 +1,203 @@
 
-import { IStorage } from "./types";
-import { User, ChatHistory, File, Folder, Notification, Contact, InsertUser } from "@shared/schema";
-import { nanoid } from "nanoid";
+import { User, Contact, File, Folder, Chat, insertUserSchema, insertContactSchema } from "@shared/schema";
+import { createClient } from "@supabase/supabase-js";
 import session from "express-session";
 import { supabase } from "./supabase";
 
-export class SupabaseStorage implements IStorage {
+export class SupabaseStorage {
   sessionStore: session.SessionStore;
 
   constructor() {
-    // Initialize with a placeholder - we'll set the real store in the async init method
+    // Initialize with a placeholder - we'll set the real store in the init method
     this.sessionStore = {} as session.SessionStore;
   }
 
   async init() {
-    // You'll need to use a session store compatible with Supabase
-    // For now, we'll keep the memory store for easy transition
-    const memorystore = await import('memorystore');
-    const MemoryStore = memorystore.default(session);
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
-    });
-    return this;
+    try {
+      // You'll need to use a session store compatible with Supabase
+      // For now, we'll keep the memory store for easy transition
+      const memorystore = await import('memorystore');
+      const MemoryStore = memorystore.default(session);
+      this.sessionStore = new MemoryStore({
+        checkPeriod: 86400000,
+      });
+      return this;
+    } catch (error) {
+      console.error("Failed to initialize storage:", error);
+      throw error;
+    }
   }
-    
-    // In production, you might want to use something like:
-    // const PgStore = require('connect-pg-simple')(session);
-    // this.sessionStore = new PgStore({
-    //   conString: process.env.DATABASE_URL
-    // });
 
   async getUser(id: number): Promise<User | undefined> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error || !data) return undefined;
-    return data as User;
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", id)
+        .single();
+      
+      if (error) throw error;
+      return data as User;
+    } catch (error) {
+      console.error("Failed to get user:", error);
+      return undefined;
+    }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('username', username)
-      .single();
-    
-    if (error || !data) return undefined;
-    return data as User;
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("username", username)
+        .single();
+      
+      if (error && error.code !== "PGRST116") throw error;
+      return data as User;
+    } catch (error) {
+      console.error("Failed to get user by username:", error);
+      return undefined;
+    }
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const referralCode = nanoid(10);
-    
-    const { data, error } = await supabase
-      .from('users')
-      .insert({
-        ...insertUser,
-        credits: 20,
-        referral_code: referralCode,
-        referred_by: null,
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as User;
+  async createUser(userData: any): Promise<User> {
+    try {
+      const validatedUser = insertUserSchema.parse(userData);
+      const { data, error } = await supabase
+        .from("users")
+        .insert(validatedUser)
+        .select("*")
+        .single();
+      
+      if (error) throw error;
+      return data as User;
+    } catch (error) {
+      console.error("Failed to create user:", error);
+      throw error;
+    }
   }
 
   async addUserCredits(userId: number, amount: number): Promise<void> {
-    const user = await this.getUser(userId);
-    if (!user) return;
-    
-    await supabase
-      .from('users')
-      .update({ credits: user.credits + amount })
-      .eq('id', userId);
-  }
-
-  async getUserChatHistory(userId: number): Promise<ChatHistory[]> {
-    const { data, error } = await supabase
-      .from('chat_history')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    
-    if (error || !data) return [];
-    return data as ChatHistory[];
-  }
-
-  async saveChatHistory(userId: number, prompt: string, response: string): Promise<ChatHistory> {
-    const { data, error } = await supabase
-      .from('chat_history')
-      .insert({
+    try {
+      const { error } = await supabase.rpc("add_credits", {
         user_id: userId,
-        prompt,
-        response,
-        is_favorite: false,
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as ChatHistory;
+        amount: amount,
+      });
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error("Failed to add user credits:", error);
+      throw error;
+    }
   }
 
-  async toggleFavorite(chatId: number): Promise<void> {
-    const { data } = await supabase
-      .from('chat_history')
-      .select('is_favorite')
-      .eq('id', chatId)
-      .single();
-    
-    if (!data) return;
-    
-    await supabase
-      .from('chat_history')
-      .update({ is_favorite: !data.is_favorite })
-      .eq('id', chatId);
+  async createContact(contactData: any): Promise<void> {
+    try {
+      const validatedContact = insertContactSchema.parse(contactData);
+      const { error } = await supabase
+        .from("contacts")
+        .insert(validatedContact);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error("Failed to create contact:", error);
+      throw error;
+    }
   }
 
-  async getUserFiles(userId: number): Promise<File[]> {
-    const { data, error } = await supabase
-      .from('files')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    
-    if (error || !data) return [];
-    return data as File[];
-  }
-
-  async createFile(userId: number, name: string, content?: string, folderId?: number): Promise<File> {
-    const { data, error } = await supabase
-      .from('files')
-      .insert({
-        user_id: userId,
-        name,
-        content: content || '',
-        folder_id: folderId || null,
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as File;
+  async createFile(
+    userId: number,
+    name: string,
+    content: string,
+    folderId: number | null = null
+  ): Promise<File> {
+    try {
+      const { data, error } = await supabase
+        .from("files")
+        .insert({
+          user_id: userId,
+          name: name,
+          content: content,
+          folder_id: folderId,
+        })
+        .select("*")
+        .single();
+      
+      if (error) throw error;
+      return data as File;
+    } catch (error) {
+      console.error("Failed to create file:", error);
+      throw error;
+    }
   }
 
   async createFolder(userId: number, name: string): Promise<Folder> {
-    const { data, error } = await supabase
-      .from('folders')
-      .insert({
-        user_id: userId,
-        name,
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as Folder;
+    try {
+      const { data, error } = await supabase
+        .from("folders")
+        .insert({
+          user_id: userId,
+          name: name,
+        })
+        .select("*")
+        .single();
+      
+      if (error) throw error;
+      return data as Folder;
+    } catch (error) {
+      console.error("Failed to create folder:", error);
+      throw error;
+    }
   }
 
   async searchFiles(userId: number, query: string): Promise<(File | Folder)[]> {
-    console.log(`Searching for "${query}" for user ${userId}`);
-    const lowercaseQuery = query.toLowerCase();
-
-    // If no query, return all items
-    if (!query) {
-      const [filesResult, foldersResult] = await Promise.all([
-        supabase.from('files').select('*').eq('user_id', userId),
-        supabase.from('folders').select('*').eq('user_id', userId)
+    try {
+      // Using a more efficient approach with parallel queries
+      const [fileResult, folderResult] = await Promise.all([
+        supabase
+          .from("files")
+          .select("*, folder:folders(name)")
+          .eq("user_id", userId)
+          .ilike("name", `%${query}%`),
+        supabase
+          .from("folders")
+          .select("*")
+          .eq("user_id", userId)
+          .ilike("name", `%${query}%`)
       ]);
       
-      const files = filesResult.data || [];
-      const folders = foldersResult.data || [];
+      if (fileResult.error) throw fileResult.error;
+      if (folderResult.error) throw folderResult.error;
       
-      return [...files, ...folders];
+      return [...(fileResult.data || []), ...(folderResult.data || [])];
+    } catch (error) {
+      console.error("Failed to search files:", error);
+      throw error;
     }
-
-    // Search with ILIKE for partial matches
-    const [filesResult, foldersResult] = await Promise.all([
-      supabase.from('files')
-        .select('*')
-        .eq('user_id', userId)
-        .or(`name.ilike.%${lowercaseQuery}%,content.ilike.%${lowercaseQuery}%`),
-      supabase.from('folders')
-        .select('*')
-        .eq('user_id', userId)
-        .ilike('name', `%${lowercaseQuery}%`)
-    ]);
-    
-    const files = filesResult.data || [];
-    const folders = foldersResult.data || [];
-    
-    return [...files, ...folders];
   }
 
-  async createNotification(userId: number, message: string): Promise<void> {
-    await supabase.from('notifications').insert({
-      user_id: userId,
-      message,
-      read: false,
-    });
-  }
-
-  async createContact(contact: Contact): Promise<void> {
-    await supabase.from('contacts').insert({
-      ...contact
-    });
+  async saveChatHistory(
+    userId: number,
+    prompt: string,
+    response: string
+  ): Promise<Chat> {
+    try {
+      const { data, error } = await supabase
+        .from("chats")
+        .insert({
+          user_id: userId,
+          prompt: prompt,
+          response: response,
+        })
+        .select("*")
+        .single();
+      
+      if (error) throw error;
+      return data as Chat;
+    } catch (error) {
+      console.error("Failed to save chat history:", error);
+      throw error;
+    }
   }
 }
 
