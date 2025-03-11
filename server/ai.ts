@@ -35,6 +35,18 @@ type GenerationParams = {
   tool?: string;
 };
 
+function getFallbackResponse(params: GenerationParams): string {
+  return `I apologize, but I am currently experiencing high demand and cannot generate a complete response at this moment. Here is a brief response to your request:
+
+Your prompt: "${params.prompt}"
+Tone requested: ${params.tone || 'professional'}
+Context: ${params.tool || 'general'} content
+
+Please try again in a few minutes. We are working to improve our service capacity.
+
+Note: This is a temporary response due to reaching our API rate limits. Your credits have not been deducted for this response.`;
+}
+
 export async function generateResponse(params: GenerationParams): Promise<string> {
   try {
     console.log('Starting AI generation with params:', params);
@@ -53,19 +65,19 @@ User request: ${prompt}`;
     console.log('Using API key:', process.env.HUGGING_FACE_API_KEY ? 'Present' : 'Missing');
     console.log('Initializing Hugging Face inference...');
 
-    // Try a different model with better availability
-    const model = "mistralai/Mixtral-8x7B-Instruct-v0.1";
+    // Use a different, more available model
+    const model = "TinyLlama/TinyLlama-1.1B-Chat-v1.0";
     console.log('Using model:', model);
 
     const response = await hf.textGeneration({
       model,
       inputs: systemPrompt,
       parameters: {
-        max_new_tokens: 800,  // Reduced tokens for better stability
+        max_new_tokens: 500,  // Reduced tokens for better reliability
         temperature: 0.7,
         top_p: 0.95,
         repetition_penalty: 1.1,
-        return_full_text: false,  // Only return the generated part
+        return_full_text: false,
       }
     });
 
@@ -78,6 +90,12 @@ User request: ${prompt}`;
       console.error('Error name:', error.name);
       console.error('Error message:', error.message);
       console.error('Error stack:', error.stack);
+
+      // Check if it's a rate limit error
+      if (error.message.includes('exceeded your monthly included credits')) {
+        console.log('Rate limit exceeded, using fallback response');
+        return getFallbackResponse(params);
+      }
     }
     throw new Error('Failed to generate AI response');
   }
