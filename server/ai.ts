@@ -5,6 +5,8 @@ const hf = new HfInference(process.env.HUGGING_FACE_API_KEY);
 const HARAM_KEYWORDS = [
   'alcohol', 'pork', 'gambling', 'interest', 'usury',
   'adultery', 'fornication', 'idol', 'shirk',
+  'riba', 'intoxication', 'wine', 'beer', 'drugs',
+  'haram', 'dating', 'betting', 'lottery',
   // Add more keywords as needed
 ];
 
@@ -12,12 +14,30 @@ export async function validatePrompt(prompt: string): Promise<{ isHalal: boolean
   console.log('Validating prompt:', prompt);
   const lowercasePrompt = prompt.toLowerCase();
 
+  // First check for explicit haram keywords
   for (const keyword of HARAM_KEYWORDS) {
     if (lowercasePrompt.includes(keyword)) {
       console.log('Found haram keyword:', keyword);
       return {
         isHalal: false,
         reason: `The prompt contains the haram term "${keyword}". This goes against Islamic principles. Please rephrase your request to avoid non-halal topics.`
+      };
+    }
+  }
+
+  // Check for potentially problematic combinations of words
+  const suspiciousPatterns = [
+    { pattern: /(music|song|dance).*festival/i, message: "Content involving music festivals may not be appropriate." },
+    { pattern: /dating.*relationship/i, message: "Content about dating relationships is not appropriate." },
+    { pattern: /(interest|loan).*bank/i, message: "Content about banking interest (riba) is not permissible." }
+  ];
+
+  for (const { pattern, message } of suspiciousPatterns) {
+    if (pattern.test(prompt)) {
+      console.log('Found suspicious pattern:', pattern);
+      return {
+        isHalal: false,
+        reason: message + " Please modify your request to align with Islamic principles."
       };
     }
   }

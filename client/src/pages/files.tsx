@@ -19,13 +19,17 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Folder, File as FileIcon, Search, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 export default function FilesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [fileDialogOpen, setFileDialogOpen] = useState(false);
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<any>(null);
+
 
   // Query for both files and folders
   const { data: files = [] } = useQuery({
@@ -53,8 +57,29 @@ export default function FilesPage() {
     },
   });
 
+  const validateFileName = async (name: string, type: 'file' | 'folder') => {
+    const existingItems = files || [];
+    const isDuplicate = existingItems.some(
+      (item) => item.name === name &&
+        ((type === 'file' && !item.folderId) || (type === 'folder' && 'createdAt' in item))
+    );
+
+    if (isDuplicate) {
+      toast({
+        title: "Error",
+        description: `A ${type} with this name already exists`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
   const createFileMutation = useMutation({
     mutationFn: async (data: any) => {
+      if (!(await validateFileName(data.name, 'file'))) {
+        throw new Error("Duplicate file name");
+      }
       const res = await apiRequest("POST", "/api/files", data);
       return res.json();
     },
@@ -78,6 +103,9 @@ export default function FilesPage() {
 
   const createFolderMutation = useMutation({
     mutationFn: async (data: any) => {
+      if (!(await validateFileName(data.name, 'folder'))) {
+        throw new Error("Duplicate folder name");
+      }
       const res = await apiRequest("POST", "/api/folders", data);
       return res.json();
     },
@@ -121,7 +149,9 @@ export default function FilesPage() {
                 </DialogHeader>
                 <Form {...folderForm}>
                   <form
-                    onSubmit={folderForm.handleSubmit((data) => createFolderMutation.mutate(data))}
+                    onSubmit={folderForm.handleSubmit((data) =>
+                      createFolderMutation.mutate(data)
+                    )}
                     className="space-y-4"
                   >
                     <FormField
@@ -157,7 +187,9 @@ export default function FilesPage() {
                 </DialogHeader>
                 <Form {...fileForm}>
                   <form
-                    onSubmit={fileForm.handleSubmit((data) => createFileMutation.mutate(data))}
+                    onSubmit={fileForm.handleSubmit((data) =>
+                      createFileMutation.mutate(data)
+                    )}
                     className="space-y-4"
                   >
                     <FormField
@@ -210,7 +242,11 @@ export default function FilesPage() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {files.map((file: any) => (
-            <Card key={file.id}>
+            <Card
+              key={file.id}
+              className="cursor-pointer hover:bg-accent/50 transition-colors"
+              onClick={() => setSelectedFile(file)}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   {file.name}
@@ -229,6 +265,46 @@ export default function FilesPage() {
             </Card>
           ))}
         </div>
+        <Dialog open={!!selectedFile} onOpenChange={() => setSelectedFile(null)}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>{selectedFile?.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-card p-4">
+                <pre className="whitespace-pre-wrap font-mono text-sm">
+                  {selectedFile?.content}
+                </pre>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  onClick={() => {
+                    localStorage.setItem("editContent", selectedFile.content);
+                    setLocation("/editor");
+                  }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const blob = new Blob([selectedFile.content], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = selectedFile.name;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                  }}
+                >
+                  Download
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

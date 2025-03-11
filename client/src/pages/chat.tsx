@@ -11,6 +11,12 @@ import { apiRequest } from "@/lib/queryClient";
 import { Loader2, AlertCircle, Save } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -54,6 +60,8 @@ export default function ChatPage() {
   const [selectedTool, setSelectedTool] = useState("general");
   const [response, setResponse] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [fileName, setFileName] = useState("");
 
   const chatMutation = useMutation({
     mutationFn: async (data: {
@@ -99,8 +107,22 @@ export default function ChatPage() {
     if (!response) return;
 
     try {
+      const defaultName = prompt.slice(0, 30).trim() + ".txt";
+      setFileName(defaultName);
+      setSaveDialogOpen(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save content",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleConfirmSave = async () => {
+    try {
       await apiRequest("POST", "/api/files", {
-        name: prompt.slice(0, 50) + ".txt",
+        name: fileName,
         content: response,
       });
 
@@ -108,6 +130,7 @@ export default function ChatPage() {
         title: "Saved!",
         description: "Content saved to your files",
       });
+      setSaveDialogOpen(false);
     } catch (error) {
       toast({
         title: "Error",
@@ -118,7 +141,6 @@ export default function ChatPage() {
   };
 
   const handleEdit = () => {
-    // Store content in localStorage for the editor page
     localStorage.setItem("editContent", response);
     setLocation("/editor");
   };
@@ -134,7 +156,6 @@ export default function ChatPage() {
               <CardTitle>AI Content Generator</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Tool Selection */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Select Tool</label>
                 <Select value={selectedTool} onValueChange={setSelectedTool}>
@@ -266,6 +287,30 @@ export default function ChatPage() {
           </Card>
         </div>
       </main>
+
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save to Files</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">File Name</label>
+              <Input
+                value={fileName}
+                onChange={(e) => setFileName(e.target.value)}
+                placeholder="Enter file name"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmSave}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
