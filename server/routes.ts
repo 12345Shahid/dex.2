@@ -34,13 +34,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Generating AI response...');
       const response = await generateResponse(req.body);
-      console.log('Saving chat history...');
-      const chat = await storage.saveChatHistory(user.id, result.data.prompt, response);
-      console.log('Deducting credits...');
-      await storage.addUserCredits(user.id, -1);
-      res.json(chat);
+      
+      try {
+        console.log('Saving chat history...');
+        const chat = await storage.saveChatHistory(user.id, result.data.prompt, response);
+        console.log('Deducting credits...');
+        await storage.addUserCredits(user.id, -1);
+        res.json(chat);
+      } catch (saveError) {
+        console.error('Failed to save chat history:', saveError);
+        // Return the response even if saving failed
+        res.json({ 
+          id: 'temp-' + Date.now(), 
+          prompt: result.data.prompt, 
+          response: response,
+          created_at: new Date().toISOString()
+        });
+      }
     } catch (error) {
       console.error('Chat generation error:', error);
+      
+      // Check if it's a rate limit error and use a proper response
+      if (error.message && error.message.includes('exceeded your monthly included credits')) {
+        return res.status(429).json({ 
+          message: "API rate limit exceeded. You can still use the service with limited responses.",
+          isRateLimited: true,
+          fallbackResponse: "We're experiencing high demand on our AI service. Please try again later or subscribe to a paid plan for uninterrupted service."
+        });
+      }
+      
       res.status(500).json({ message: "Failed to generate response" });
     }
   });
