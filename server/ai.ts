@@ -52,11 +52,12 @@ User request: ${prompt}`;
     console.log('Constructed system prompt:', systemPrompt);
     console.log('Using API key:', process.env.HUGGING_FACE_API_KEY ? 'Present' : 'Missing');
 
+    // Use a different, more available model
     const response = await hf.textGeneration({
-      model: "mistralai/Mistral-7B-v0.1",
+      model: "OpenAssistant/oasst-sft-4-pythia-12b-epoch-3.5",  // Changed model
       inputs: systemPrompt,
       parameters: {
-        max_new_tokens: 2048,
+        max_new_tokens: 1024,  // Reduced tokens to avoid credit issues
         temperature: 0.7,
         top_p: 0.95,
         repetition_penalty: 1.1,

@@ -18,12 +18,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Folder, File, Search, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function FilesPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: files = [] } = useQuery({
+  const { data: files = [], refetch: refetchFiles } = useQuery({
     queryKey: ["/api/files/search", searchQuery],
     queryFn: async () => {
       const res = await fetch(`/api/files/search?q=${searchQuery}`);
@@ -55,6 +57,18 @@ export default function FilesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/files/search"] });
+      fileForm.reset();
+      toast({
+        title: "Success",
+        description: "File created successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create file",
+        variant: "destructive",
+      });
     },
   });
 
@@ -65,17 +79,29 @@ export default function FilesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/files/search"] });
+      folderForm.reset();
+      toast({
+        title: "Success",
+        description: "Folder created successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create folder",
+        variant: "destructive",
+      });
     },
   });
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Files</h1>
-          
+
           <div className="flex gap-2">
             <Dialog>
               <DialogTrigger asChild>
