@@ -60,20 +60,32 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/register", async (req, res, next) => {
-    const existingUser = await storage.getUserByUsername(req.body.username);
-    if (existingUser) {
-      return res.status(400).send("Username already exists");
+    try {
+      const existingUser = await storage.getUserByUsername(req.body.username);
+      if (existingUser) {
+        return res.status(400).send("Username already exists");
+      }
+
+      // Generate a unique referral code
+      const referralCode = randomBytes(8).toString('hex');
+      
+      const user = await storage.createUser({
+        ...req.body,
+        password: await hashPassword(req.body.password),
+        referral_code: referralCode
+      });
+
+      req.login(user, (err) => {
+        if (err) return next(err);
+        res.status(201).json(user);
+      });
+    } catch (error) {
+      console.error('Failed to create user:', error);
+      return res.status(500).json({ 
+        message: "Registration failed. Please try again later.",
+        status: "error"
+      });
     }
-
-    const user = await storage.createUser({
-      ...req.body,
-      password: await hashPassword(req.body.password),
-    });
-
-    req.login(user, (err) => {
-      if (err) return next(err);
-      res.status(201).json(user);
-    });
   });
 
   app.post("/api/login", (req, res, next) => {

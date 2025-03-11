@@ -7,7 +7,7 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   credits: integer("credits").notNull().default(20),
-  referralCode: text("referral_code").notNull().unique(),
+  referralCode: text("referral_code").unique(), // Removed notNull constraint
   referredBy: integer("referred_by").references(() => users.id),
 });
 
@@ -56,6 +56,7 @@ export const contacts = pgTable("contacts", {
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  referralCode: true, // Added referralCode to the schema
 });
 
 export const insertChatSchema = createInsertSchema(chatHistory).pick({

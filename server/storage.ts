@@ -2,6 +2,7 @@ import { User, Contact, File, Folder, Chat, insertUserSchema, insertContactSchem
 import { createClient } from "@supabase/supabase-js";
 import session from "express-session";
 import { supabase } from "./supabase";
+import { v4 as uuidv4 } from 'uuid'; // Import uuid library
 
 export class SupabaseStorage {
   sessionStore: session.SessionStore;
@@ -62,9 +63,11 @@ export class SupabaseStorage {
   async createUser(userData: any): Promise<User> {
     try {
       const validatedUser = insertUserSchema.parse(userData);
+      // Generate a referral code
+      const referralCode = uuidv4();
       const { data, error } = await supabase
         .from("users")
-        .insert(validatedUser)
+        .insert({ ...validatedUser, referral_code: referralCode })
         .select("*")
         .single();
 
