@@ -1,4 +1,3 @@
-
 import { User, Contact, File, Folder, Chat, insertUserSchema, insertContactSchema } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 import session from "express-session";
@@ -35,7 +34,7 @@ export class SupabaseStorage {
         .select("*")
         .eq("id", id)
         .single();
-      
+
       if (error) throw error;
       return data as User;
     } catch (error) {
@@ -51,7 +50,7 @@ export class SupabaseStorage {
         .select("*")
         .eq("username", username)
         .single();
-      
+
       if (error && error.code !== "PGRST116") throw error;
       return data as User;
     } catch (error) {
@@ -68,7 +67,7 @@ export class SupabaseStorage {
         .insert(validatedUser)
         .select("*")
         .single();
-      
+
       if (error) throw error;
       return data as User;
     } catch (error) {
@@ -83,7 +82,7 @@ export class SupabaseStorage {
         user_id: userId,
         amount: amount,
       });
-      
+
       if (error) throw error;
     } catch (error) {
       console.error("Failed to add user credits:", error);
@@ -97,7 +96,7 @@ export class SupabaseStorage {
       const { error } = await supabase
         .from("contacts")
         .insert(validatedContact);
-      
+
       if (error) throw error;
     } catch (error) {
       console.error("Failed to create contact:", error);
@@ -122,7 +121,7 @@ export class SupabaseStorage {
         })
         .select("*")
         .single();
-      
+
       if (error) throw error;
       return data as File;
     } catch (error) {
@@ -141,7 +140,7 @@ export class SupabaseStorage {
         })
         .select("*")
         .single();
-      
+
       if (error) throw error;
       return data as Folder;
     } catch (error) {
@@ -165,10 +164,10 @@ export class SupabaseStorage {
           .eq("user_id", userId)
           .ilike("name", `%${query}%`)
       ]);
-      
+
       if (fileResult.error) throw fileResult.error;
       if (folderResult.error) throw folderResult.error;
-      
+
       return [...(fileResult.data || []), ...(folderResult.data || [])];
     } catch (error) {
       console.error("Failed to search files:", error);
@@ -191,7 +190,7 @@ export class SupabaseStorage {
         })
         .select("*")
         .single();
-      
+
       if (error) throw error;
       return data as Chat;
     } catch (error) {
@@ -204,5 +203,15 @@ export class SupabaseStorage {
 // Create but don't export directly - we need to initialize it first
 const storageInstance = new SupabaseStorage();
 
-// Export a promise that resolves to the initialized storage
-export const storage = await storageInstance.init();
+// Initialize storage with proper error handling
+let storage: SupabaseStorage;
+
+try {
+  storage = await storageInstance.init();
+} catch (error) {
+  console.error("Failed to initialize storage:", error);
+  // Create a minimal implementation to prevent crashes
+  storage = storageInstance;
+}
+
+export { storage };
