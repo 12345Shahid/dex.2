@@ -51,23 +51,34 @@ User request: ${prompt}`;
 
     console.log('Constructed system prompt:', systemPrompt);
     console.log('Using API key:', process.env.HUGGING_FACE_API_KEY ? 'Present' : 'Missing');
+    console.log('Initializing Hugging Face inference...');
 
-    // Use a different, more available model
+    // Try a different model with better availability
+    const model = "mistralai/Mixtral-8x7B-Instruct-v0.1";
+    console.log('Using model:', model);
+
     const response = await hf.textGeneration({
-      model: "OpenAssistant/oasst-sft-4-pythia-12b-epoch-3.5",  // Changed model
+      model,
       inputs: systemPrompt,
       parameters: {
-        max_new_tokens: 1024,  // Reduced tokens to avoid credit issues
+        max_new_tokens: 800,  // Reduced tokens for better stability
         temperature: 0.7,
         top_p: 0.95,
         repetition_penalty: 1.1,
+        return_full_text: false,  // Only return the generated part
       }
     });
 
-    console.log('Successfully generated response');
+    console.log('Response received from API');
+    console.log('Response preview:', response.generated_text.slice(0, 100) + '...');
     return response.generated_text;
   } catch (error) {
     console.error('AI generation error details:', error);
+    if (error instanceof Error) {
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     throw new Error('Failed to generate AI response');
   }
 }

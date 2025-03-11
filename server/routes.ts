@@ -96,11 +96,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/files/search", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
-    const query = req.query.q as string;
-    if (!query) return res.status(400).json({ message: "Search query required" });
+    const query = (req.query.q as string) || '';
+    console.log('Search query:', query);
 
     try {
+      // Get both files and folders
       const files = await storage.searchFiles(req.user!.id, query);
+      console.log('Search results:', files);
       res.json(files);
     } catch (error) {
       console.error('File search error:', error);

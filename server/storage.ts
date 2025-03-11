@@ -118,13 +118,39 @@ export class MemStorage implements IStorage {
     return folder;
   }
 
-  async searchFiles(userId: number, query: string): Promise<File[]> {
-    return Array.from(this.files.values()).filter(
-      (file) =>
-        file.userId === userId &&
-        (file.name.toLowerCase().includes(query.toLowerCase()) ||
-          file.content.toLowerCase().includes(query.toLowerCase())),
+  async searchFiles(userId: number, query: string): Promise<(File | Folder)[]> {
+    console.log(`Searching for "${query}" for user ${userId}`);
+    const lowercaseQuery = query.toLowerCase();
+
+    // Get all files and folders for the user
+    const userFiles = Array.from(this.files.values())
+      .filter(file => file.userId === userId);
+
+    const userFolders = Array.from(this.folders.values())
+      .filter(folder => folder.userId === userId);
+
+    console.log(`Found ${userFiles.length} files and ${userFolders.length} folders for user`);
+
+    // If no query, return all items
+    if (!query) {
+      const allItems = [...userFiles, ...userFolders];
+      console.log(`Returning all ${allItems.length} items`);
+      return allItems;
+    }
+
+    // Search in both files and folders
+    const matchingFiles = userFiles.filter(file =>
+      file.name.toLowerCase().includes(lowercaseQuery) ||
+      (file.content?.toLowerCase() || '').includes(lowercaseQuery)
     );
+
+    const matchingFolders = userFolders.filter(folder =>
+      folder.name.toLowerCase().includes(lowercaseQuery)
+    );
+
+    const results = [...matchingFiles, ...matchingFolders];
+    console.log(`Found ${results.length} matching items`);
+    return results;
   }
 
   async createNotification(userId: number, message: string): Promise<void> {

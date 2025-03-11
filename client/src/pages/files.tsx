@@ -17,18 +17,21 @@ import { insertFileSchema, insertFolderSchema } from "@shared/schema";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Folder, File, Search, Plus } from "lucide-react";
+import { Folder, File as FileIcon, Search, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function FilesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const [fileDialogOpen, setFileDialogOpen] = useState(false);
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
 
-  const { data: files = [], refetch: refetchFiles } = useQuery({
+  // Query for both files and folders
+  const { data: files = [] } = useQuery({
     queryKey: ["/api/files/search", searchQuery],
     queryFn: async () => {
-      const res = await fetch(`/api/files/search?q=${searchQuery}`);
+      const res = await fetch(`/api/files/search?q=${searchQuery || ''}`);
       if (!res.ok) throw new Error("Failed to fetch files");
       return res.json();
     },
@@ -58,6 +61,7 @@ export default function FilesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/files/search"] });
       fileForm.reset();
+      setFileDialogOpen(false);
       toast({
         title: "Success",
         description: "File created successfully",
@@ -80,6 +84,7 @@ export default function FilesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/files/search"] });
       folderForm.reset();
+      setFolderDialogOpen(false);
       toast({
         title: "Success",
         description: "Folder created successfully",
@@ -103,7 +108,7 @@ export default function FilesPage() {
           <h1 className="text-3xl font-bold">Files</h1>
 
           <div className="flex gap-2">
-            <Dialog>
+            <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">
                   <Folder className="mr-2 h-4 w-4" />
@@ -139,7 +144,7 @@ export default function FilesPage() {
               </DialogContent>
             </Dialog>
 
-            <Dialog>
+            <Dialog open={fileDialogOpen} onOpenChange={setFileDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
@@ -172,7 +177,7 @@ export default function FilesPage() {
                       name="content"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Content</FormLabel>
+                          <FormLabel>Content (Optional)</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -213,7 +218,7 @@ export default function FilesPage() {
                 {file.folderId ? (
                   <Folder className="h-4 w-4 text-muted-foreground" />
                 ) : (
-                  <File className="h-4 w-4 text-muted-foreground" />
+                  <FileIcon className="h-4 w-4 text-muted-foreground" />
                 )}
               </CardHeader>
               <CardContent>
