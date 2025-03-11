@@ -11,7 +11,8 @@ export class SupabaseStorage implements IStorage {
   constructor() {
     // You'll need to use a session store compatible with Supabase
     // For now, we'll keep the memory store for easy transition
-    const MemoryStore = require('memorystore')(session);
+    import memorystore from 'memorystore';
+    const MemoryStore = memorystore(session);
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
