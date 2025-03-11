@@ -104,3 +104,66 @@ export function useAuth() {
   }
   return context;
 }
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axios, { AxiosError } from "axios";
+import { User } from "@shared/schema";
+
+export function useAuth() {
+  const queryClient = useQueryClient();
+
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      try {
+        const response = await axios.get<User>("/api/user");
+        return response.data;
+      } catch (error) {
+        // If 401, the user is not logged in, which is fine
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          return null;
+        }
+        throw error;
+      }
+    },
+  });
+
+  const loginMutation = useMutation({
+    mutationFn: async (credentials: { username: string; password: string }) => {
+      const response = await axios.post<User>("/api/login", credentials);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["user"], data);
+    },
+    onError: (error: AxiosError) => {
+      console.error("Login error:", error);
+    },
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: async (credentials: { username: string; password: string }) => {
+      const response = await axios.post<User>("/api/register", credentials);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["user"], data);
+    },
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await axios.post("/api/logout");
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(["user"], null);
+    },
+  });
+
+  return {
+    user,
+    isLoading,
+    loginMutation,
+    registerMutation,
+    logoutMutation,
+  };
+}

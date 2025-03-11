@@ -86,6 +86,11 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
+                    {loginMutation.isError && (
+                      <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                        {loginMutation.error?.response?.data?.message || "Login failed. Please try again."}
+                      </div>
+                    )}
                     <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
                       {loginMutation.isPending ? "Logging in..." : "Login"}
                     </Button>
