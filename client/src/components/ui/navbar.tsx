@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./dropdown-menu";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Info } from "lucide-react";
 
 export function Navbar() {
   const { user, logoutMutation } = useAuth();
@@ -22,9 +22,15 @@ export function Navbar() {
             </span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link href="/dashboard">Dashboard</Link>
-            <Link href="/chat">Chat</Link>
-            <Link href="/files">Files</Link>
+            {user ? (
+              <>
+                <Link href="/dashboard">Dashboard</Link>
+                <Link href="/chat">Chat</Link>
+                <Link href="/history">History</Link>
+                <Link href="/files">Files</Link>
+              </>
+            ) : null}
+            <Link href="/about-us">About Us</Link>
           </nav>
         </div>
         <div className="flex flex-1 items-center space-x-2 justify-end">
@@ -46,7 +52,7 @@ export function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link href="/auth">
+            <Link href="/login">
               <Button>Sign In</Button>
             </Link>
           )}

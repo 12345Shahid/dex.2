@@ -8,11 +8,21 @@ import { insertUserSchema } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-export default function AuthPage() {
+export default function AuthPage({ params }: { params?: { tab?: string } }) {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
+  const [location] = useLocation();
+  
+  // Determine the default tab based on the current route
+  const getDefaultTab = () => {
+    if (location.includes('/register')) return 'register';
+    if (location.includes('/login')) return 'login';
+    return 'login';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getDefaultTab());
 
   const loginForm = useForm({
     resolver: zodResolver(insertUserSchema),
@@ -32,10 +42,34 @@ export default function AuthPage() {
 
   // Handle redirect in useEffect
   useEffect(() => {
+    console.log('Auth status changed. User:', user);
     if (user) {
-      setLocation("/dashboard");
+      console.log('User is authenticated, redirecting to dashboard');
+      setTimeout(() => {
+        setLocation("/dashboard");
+      }, 100); // Short delay to ensure the redirect happens
     }
   }, [user, setLocation]);
+
+  // Function to handle registration with referral code
+  const handleRegister = (data) => {
+    // Check if there's a stored referral code
+    const referralCode = localStorage.getItem('referralCode');
+    
+    if (referralCode) {
+      // Include the referral code in the registration data
+      registerMutation.mutate({
+        ...data,
+        referrer: referralCode
+      });
+      
+      // Clear the referral code after using it
+      localStorage.removeItem('referralCode');
+    } else {
+      // Register without a referral code
+      registerMutation.mutate(data);
+    }
+  };
 
   // If we're in the process of redirecting, show nothing
   if (user) {
@@ -51,15 +85,26 @@ export default function AuthPage() {
             <CardTitle className="text-2xl text-center">Welcome to Halal AI Chat</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login">
+            <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+                <TabsTrigger value="login" onClick={() => setLocation("/login")}>Login</TabsTrigger>
+                <TabsTrigger value="register" onClick={() => setLocation("/register")}>Register</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
                 <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit((data) => loginMutation.mutate(data))} className="space-y-4">
+                  <form onSubmit={loginForm.handleSubmit((data) => {
+                    console.log("Login form submitted with data:", data);
+                    loginMutation.mutate(data, {
+                      onSuccess: () => {
+                        console.log("Login mutation success, redirecting to dashboard");
+                        setTimeout(() => setLocation("/dashboard"), 100);
+                      },
+                      onError: (error) => {
+                        console.error("Login error:", error);
+                      }
+                    });
+                  })} className="space-y-4">
                     <FormField
                       control={loginForm.control}
                       name="username"
@@ -88,7 +133,7 @@ export default function AuthPage() {
                     />
                     {loginMutation.isError && (
                       <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-                        {loginMutation.error?.response?.data?.message || "Login failed. Please try again."}
+                        {loginMutation.error?.message || "Login failed. Please try again."}
                       </div>
                     )}
                     <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
@@ -100,7 +145,7 @@ export default function AuthPage() {
 
               <TabsContent value="register">
                 <Form {...registerForm}>
-                  <form onSubmit={registerForm.handleSubmit((data) => registerMutation.mutate(data))} className="space-y-4">
+                  <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
                     <FormField
                       control={registerForm.control}
                       name="username"
@@ -127,6 +172,11 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
+                    {registerMutation.isError && (
+                      <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                        {registerMutation.error?.message || "Registration failed. Please try again."}
+                      </div>
+                    )}
                     <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
                       {registerMutation.isPending ? "Creating account..." : "Create Account"}
                     </Button>

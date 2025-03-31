@@ -34,11 +34,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      try {
+        const res = await apiRequest("POST", "/api/login", credentials);
+        return await res.json();
+      } catch (error) {
+        // Try to extract the message from the response
+        if (error instanceof Error) {
+          const message = error.message;
+          // Check if the message contains a JSON structure
+          if (message.includes('{')) {
+            try {
+              const startJson = message.indexOf('{');
+              const jsonStr = message.substring(startJson);
+              const errorData = JSON.parse(jsonStr);
+              if (errorData.message) {
+                throw new Error(errorData.message);
+              }
+            } catch (jsonError) {
+              // If parsing fails, just throw the original error
+            }
+          }
+        }
+        throw error;
+      }
     },
     onSuccess: (user: SelectUser) => {
+      console.log("Login successful, setting user data:", user);
       queryClient.setQueryData(["/api/user"], user);
+      // Invalidate queries to force a refresh
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
     },
     onError: (error: Error) => {
       toast({
@@ -51,8 +75,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: InsertUser) => {
-      const res = await apiRequest("POST", "/api/register", credentials);
-      return await res.json();
+      try {
+        const res = await apiRequest("POST", "/api/register", credentials);
+        return await res.json();
+      } catch (error) {
+        // Try to extract the message from the response
+        if (error instanceof Error) {
+          const message = error.message;
+          // Check if the message contains a JSON structure
+          if (message.includes('{')) {
+            try {
+              const startJson = message.indexOf('{');
+              const jsonStr = message.substring(startJson);
+              const errorData = JSON.parse(jsonStr);
+              if (errorData.message) {
+                throw new Error(errorData.message);
+              }
+            } catch (jsonError) {
+              // If parsing fails, just throw the original error
+            }
+          }
+        }
+        throw error;
+      }
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);

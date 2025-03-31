@@ -1,8 +1,27 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/ui/navbar";
+import { useEffect } from "react";
 
 export default function HomePage() {
+  const [, setLocation] = useLocation();
+
+  // Handle referral codes in URL
+  useEffect(() => {
+    // Check if there's a ref parameter in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const referralCode = urlParams.get('ref');
+    
+    if (referralCode) {
+      // Store the referral code in localStorage so it can be used during registration
+      localStorage.setItem('referralCode', referralCode);
+      console.log('Referral code saved:', referralCode);
+      
+      // Redirect to registration page after storing the referral code
+      setLocation('/register');
+    }
+  }, [setLocation]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -18,7 +37,7 @@ export default function HomePage() {
             <p className="text-xl md:text-2xl text-muted-foreground mb-8">
               🚀 Chat with the world's best AI model, filtered for Islamic principles
             </p>
-            <Link href="/auth">
+            <Link href="/login">
               <Button size="lg" className="text-lg px-8">
                 Start Chatting for Free
               </Button>

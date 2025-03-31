@@ -26,6 +26,8 @@ export const files = pgTable("files", {
   name: text("name").notNull(),
   content: text("content"),
   folderId: integer("folder_id").references(() => folders.id),
+  isFavorite: boolean("is_favorite").default(false),
+  shareId: text("share_id").unique(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

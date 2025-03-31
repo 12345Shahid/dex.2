@@ -1,0 +1,10 @@
+
+> rest-express@1.0.0 dev
+> tsx server/index.ts
+
+Local model not available, will use mock implementation
+Checking database schema...
+✅ Found column: folders.parent_id
+✅ Found column: files.is_favorite
+✅ Database schema is up to date!
+Re-optimizing dependencies because vite config has changed

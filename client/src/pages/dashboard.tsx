@@ -12,7 +12,7 @@ export default function DashboardPage() {
   const { toast } = useToast();
 
   const copyReferralLink = async () => {
-    const referralLink = `${window.location.origin}?ref=${user?.referralCode}`;
+    const referralLink = `${window.location.origin}/refer/${user?.referral_code}`;
     await navigator.clipboard.writeText(referralLink);
     toast({
       title: "Copied!",
@@ -25,6 +25,15 @@ export default function DashboardPage() {
     queryFn: async () => {
       const res = await fetch("/api/chat/history");
       if (!res.ok) throw new Error("Failed to fetch chat history");
+      return res.json();
+    },
+  });
+
+  const { data: referralCredits = { count: 0 } } = useQuery({
+    queryKey: ["/api/user/referral-credits"],
+    queryFn: async () => {
+      const res = await fetch("/api/user/referral-credits");
+      if (!res.ok) throw new Error("Failed to fetch referral credits");
       return res.json();
     },
   });
@@ -56,7 +65,7 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{referralCredits.count}</div>
             </CardContent>
           </Card>
 
@@ -84,7 +93,7 @@ export default function DashboardPage() {
             <div className="flex space-x-2">
               <Input
                 readOnly
-                value={`${window.location.origin}?ref=${user?.referralCode}`}
+                value={`${window.location.origin}/refer/${user?.referral_code}`}
                 className="font-mono"
               />
               <Button onClick={copyReferralLink} variant="secondary">
