@@ -122,30 +122,71 @@ export async function setupVite(app: Express, server: Server) {
 
 export function serveStatic(app: Express) {
   // In production, we serve static files from the dist/public directory
-  const distPath = path.resolve(__dirname, "..", "dist", "public");
+  // When running in the bundled production environment, __dirname might be different
+  // so we need to handle both cases
+  let distPath;
+  
+  if (process.env.NODE_ENV === 'production') {
+    // For production deployment, we are in the dist directory directly
+    // So public directory should be at ./public
+    distPath = path.resolve(process.cwd(), "public");
+    
+    // Log all possible paths for debugging
+    console.log("Checking possible static file paths:");
+    [
+      path.resolve(process.cwd(), "public"),
+      path.resolve(process.cwd(), "dist/public"),
+      path.resolve(process.cwd(), "../public"),
+      path.resolve(process.cwd(), "../dist/public")
+    ].forEach(p => {
+      console.log(`- ${p}: ${fs.existsSync(p) ? 'exists' : 'not found'}`);
+    });
+  } else {
+    // In development, use the path relative to this file
+    distPath = path.resolve(__dirname, "..", "dist", "public");
+  }
   
   console.log(`Looking for static files in: ${distPath}`);
   
   // If the production build doesn't exist, fall back to serving the client directory directly
   if (!fs.existsSync(distPath)) {
     console.warn(`Production build not found at ${distPath}, falling back to client directory`);
-    const clientPath = path.resolve(__dirname, "..", "client");
     
-    console.log(`Serving static files from: ${clientPath}`);
-    app.use(express.static(clientPath));
+    // Try additional paths
+    const possiblePaths = [
+      path.resolve(process.cwd(), "client/dist"),
+      path.resolve(process.cwd(), "../client/dist"),
+      path.resolve(process.cwd(), "../dist/public"),
+      path.resolve(process.cwd(), "public")
+    ];
     
-    // Fallback to client/index.html for SPA routing
-    app.use("*", (req, res) => {
-      const indexPath = path.resolve(clientPath, "index.html");
-      console.log(`Serving SPA from: ${indexPath} for URL: ${req.originalUrl}`);
-      
-      if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-      } else {
-        res.status(500).send("Client files not found. Please build the client first.");
+    for (const tryPath of possiblePaths) {
+      if (fs.existsSync(tryPath)) {
+        console.log(`Found static files at: ${tryPath}`);
+        distPath = tryPath;
+        break;
       }
-    });
-    return;
+    }
+    
+    if (!fs.existsSync(distPath)) {
+      const clientPath = path.resolve(process.cwd(), process.env.NODE_ENV === 'production' ? "../client" : "client");
+      
+      console.log(`Serving static files from: ${clientPath}`);
+      app.use(express.static(clientPath));
+      
+      // Fallback to client/index.html for SPA routing
+      app.use("*", (req, res) => {
+        const indexPath = path.resolve(clientPath, "index.html");
+        console.log(`Serving SPA from: ${indexPath} for URL: ${req.originalUrl}`);
+        
+        if (fs.existsSync(indexPath)) {
+          res.sendFile(indexPath);
+        } else {
+          res.status(500).send("Client files not found. Please build the client first.");
+        }
+      });
+      return;
+    }
   }
   
   // Serve production build static files

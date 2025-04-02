@@ -175,9 +175,11 @@ async function main() {
     // importantly only setup vite in development and after
     // setting up all the other routes so the catch-all route
     // doesn't interfere with the other routes
-    if (app.get("env") === "development") {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Starting in development mode with Vite middleware');
       await setupVite(app, server);
     } else {
+      console.log('Starting in production mode with static file serving');
       serveStatic(app);
     }
 

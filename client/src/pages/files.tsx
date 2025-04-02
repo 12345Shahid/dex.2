@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertFileSchema, insertFolderSchema } from "@shared/schema";
+import { insertFileSchema, insertFolderSchema } from "@shared/types";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";

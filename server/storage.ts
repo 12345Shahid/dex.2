@@ -1,4 +1,4 @@
-import { User, Contact, File, Folder, Chat, insertUserSchema, insertContactSchema } from "@shared/schema";
+import { User, Contact, File, Folder, Chat, insertUserSchema, insertContactSchema } from "./schema";
 import { createClient } from "@supabase/supabase-js";
 import session from "express-session";
 import { supabase } from "./supabase";

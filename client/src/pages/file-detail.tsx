@@ -35,8 +35,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
-import { jsPDF } from "jspdf";
-import 'jspdf-autotable';
+import { jsPDF } from "jspdf/dist/jspdf.es.min.js";
+import './../../node_modules/jspdf-autotable/dist/jspdf.plugin.autotable';
 
 export default function FileDetailPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();

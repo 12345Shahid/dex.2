@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"),
+      "@": path.resolve(__dirname, "./src"),
       "@shared": path.resolve(__dirname, "../shared"),
     },
   },
@@ -15,8 +15,6 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:8080",
         changeOrigin: true,
-        secure: false,
-        ws: true,
       }
     },
     fs: {
@@ -29,5 +27,14 @@ export default defineConfig({
   build: {
     // Generate source maps for better debugging
     sourcemap: true,
+    rollupOptions: {
+      external: ['drizzle-orm/pg-core', 'drizzle-zod'],
+      output: {
+        manualChunks: {
+          'pdf': ['jspdf', 'jspdf-autotable']
+        }
+      }
+    },
+    outDir: 'dist'
   }
 }); 

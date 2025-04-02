@@ -15,8 +15,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { jsPDF } from "jspdf";
-import 'jspdf-autotable';
+import { jsPDF } from "jspdf/dist/jspdf.es.min.js";
+import './../../node_modules/jspdf-autotable/dist/jspdf.plugin.autotable';
 import { format } from "date-fns";
 
 interface SharedFile {

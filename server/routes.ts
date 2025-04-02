@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { generateResponse } from "./ai";
-import { insertChatSchema, insertContactSchema, insertFileSchema, insertFolderSchema } from "@shared/schema";
+import { insertChatSchema, insertContactSchema, insertFileSchema, insertFolderSchema } from "./schema";
 import { supabase } from "./supabase";
 import passport from "passport";
 import path from "path";
